@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🌥️SkyPulse — Real-Time Weather Web App</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Righteous&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <style>
+    /* Dynamic background logic */
+  </style>
+
+  {% set style_map = {
+  'bg-clear': 'clear.png',
+  'bg-clouds': 'cloud.png',
+  'bg-rain': 'rain.png',
+  'bg-thunderstorm': 'thunderstorm.png',
+  'bg-mist': 'mist.png',
+  'bg-snow': 'snowfall.png'
+  } %}
+  {% set final_filename = style_map.get(bg_class | default(''), 'sunset.png') %}
+  {% set bg_url = url_for('static', filename=final_filename) %}
+
+  <style>
+    .dynamic-bg {
+      background-image: url("{{ bg_url }}");
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-background dynamic-bg"></div>
+  <div class="overlay-gradient"></div>
+
+  <div class="synoptic-container">
+
+    <!-- TOP NAVIGATION -->
+    <header class="top-nav animate-fade-down">
+      <div class="brand"><img src="{{ url_for('static', filename='logo.png') }}" alt="Logo"
+          style="height: 54px; width: 54px; margin-right: 12px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.7)); border-radius: 50%;">
+        SkyPulse</div>
+      <div class="search-location">
+        <form action="/weather" method="POST" id="weather-form">
+          <i class="bi bi-geo-alt"></i>
+          <span placeholder="Weather in "> </span>
+          <input type="text" name="city" value="{{ last_city if last_city else '' }}" placeholder="Search city..."
+            class="city-input" id="city-search" required autocomplete="off" list="city-suggestions"
+            onfocus="this.value=''" oninput="fetchCities(this.value)" />
+          <datalist id="city-suggestions"></datalist>
+          <i class="bi bi-chevron-down"></i>
+          <input type="hidden" name="units" id="unit-input" value="{{ weather.units if weather else 'metric' }}" />
+        </form>
+      </div>
+
+      <div class="nav-controls">
+        <div class="unit-toggle">
+          <strong class="{% if weather and weather.units == 'metric' %}active{% elif not weather %}active{% endif %}"
+            onclick="setUnit('metric')" style="cursor:pointer;">°C</strong> &nbsp;|&nbsp;
+          <strong class="{% if weather and weather.units == 'imperial' %}active{% endif %}"
+            onclick="setUnit('imperial')" style="cursor:pointer;">°F</strong>
+        </div>
+        <div class="lang-toggle" style="display: none;">
+          <strong>EN</strong> &nbsp;|&nbsp; <span>RU</span>
+        </div>
+      </div>
+    </header>
+
+    {% if error %}
+    <div class="error-msg">
+      <h2>Oops!</h2>
+      <p>{{ error }}</p>
+    </div>
+    {% elif not weather %}
+    <div class="error-msg">
+      <h2>Hello</h2>
+      <p>Search for a city at the top to see the forecast.</p>
+    </div>
+    {% else %}
+
+    <!-- MAIN CONTENT MIDDLE -->
+    <main class="main-content">
+
+      <!-- Current Condition -->
+      <section class="current-weather animate-fade-in">
+        <div class="weather-icon-large">
+          <img src="https://openweathermap.org/img/wn/{{ weather.icon }}@4x.png" alt="Icon" />
+        </div>
+        <div class="weather-info">
+          <div class="datetime-label">{{ datetime }}</div>
+          <div class="temp-huge">
+            {% if weather.temperature > 0 %}+{% endif %}{{ weather.temperature }}°{{ weather.units == 'metric' and 'C'
+            or 'F' }}
+          </div>
+          <div class="feels-like">Feels like {{ weather.feels_like }}°{{ weather.units == 'metric' and 'C' or 'F' }}
+          </div>
+          <div class="condition-paragraph">The weather is currently {{ weather.condition.lower() }} with {{
+            weather.description.lower() }}.</div>
+        </div>
+      </section>
+
+      <!-- More Details List -->
+      <section class="more-details animate-slide-left" style="animation-delay: 0.1s;">
+        <h4 class="details-title">MORE DETAILS:</h4>
+        <ul class="details-list">
+          <li><span class="lbl">Wind speed:</span> <span class="val">{{ weather.wind_speed }} {{ weather.speed_unit
+              }}</span></li>
+          <li><span class="lbl">Air humidity:</span> <span class="val">{{ weather.humidity }}%</span></li>
+          <li><span class="lbl">Pressure:</span> <span class="val">{{ weather.pressure }} hPa</span></li>
+          <li><span class="lbl">Visibility:</span> <span class="val">{{ weather.visibility }}</span></li>
+        </ul>
+      </section>
+
+      <!-- Intraday Forecast (Right Panel) -->
+      {% if forecast and forecast.intraday %}
+      <section class="intraday-panel animate-slide-left" style="animation-delay: 0.2s;">
+        <div class="intraday-glass">
+          <div class="intraday-grid">
+            {% for slot in forecast.intraday %}
+            <div class="intraday-col">
+              <span class="time-label">{{ slot.label }}</span>
+              <img class="mini-icon" src="https://openweathermap.org/img/wn/{{ slot.icon }}.png" />
+              <strong class="mini-temp">{% if slot.temp > 0 %}+{% endif %}{{ slot.temp }}°</strong>
+              <span class="time-exact">{{ slot.time }}</span>
+            </div>
+            {% endfor %}
+          </div>
+          <!-- Mocking a wave chart underneath intraday temps -->
+          <div class="intraday-wave">
+            <svg viewBox="0 0 400 60" preserveAspectRatio="none">
+              <path d="M0,30 Q100,0 200,30 T400,30 L400,60 L0,60 Z" fill="rgba(255,255,255,0.05)" />
+              <path d="M0,30 Q100,0 200,30 T400,30" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2" />
+            </svg>
+          </div>
+        </div>
+      </section>
+      {% endif %}
+
+    </main>
+
+    <!-- FORECAST STRIP BOTTOM -->
+    {% if forecast and forecast.daily %}
+    <footer class="forecast-strip animate-fade-up" style="animation-delay: 0.3s;">
+      <div class="strip-header">
+        <div class="tabs">
+          <span class="active-tab">TODAY</span>
+        </div>
+        <div class="show-more">SHOW FOR 10 DAYS</div>
+      </div>
+
+      <div class="daily-grid">
+        {% for day in forecast.daily %}
+        <div class="daily-col">
+          <div class="day-name">{{ day.day_name }}</div>
+          <div class="day-date">{{ day.day_date }}</div>
+          <div class="day-temps">
+            <div>min <strong>{% if day.min > 0 %}+{% endif %}{{ day.min }}°</strong></div>
+            <div>max <strong>{% if day.max > 0 %}+{% endif %}{{ day.max }}°</strong></div>
+          </div>
+          <img class="daily-icon" src="https://openweathermap.org/img/wn/{{ day.icon }}@2x.png" />
+          <div class="day-desc">{{ day.desc }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </footer>
+    {% endif %}
+
+    {% endif %}
+  </div>
+
+  <script>
+    function setUnit(unit) {
+      document.getElementById('unit-input').value = unit;
+      // Only auto-submit if there's a valid city entered or remembered
+      const cityVal = document.getElementById('city-search').value;
+      if (cityVal && cityVal !== "Search city...") {
+        document.getElementById('weather-form').submit();
+      }
+    }
+
+    let fetchTimeout;
+    function fetchCities(query) {
+      if (query.trim().length < 2) return;
+
+      // Debounce requests
+      clearTimeout(fetchTimeout);
+      fetchTimeout = setTimeout(async () => {
+        try {
+          const res = await fetch(`/search_cities?q=${encodeURIComponent(query)}`);
+          const data = await res.json();
+          const dataList = document.getElementById('city-suggestions');
+          dataList.innerHTML = '';
+          data.cities.forEach(city => {
+            const option = document.createElement('option');
+            option.value = city;
+            dataList.appendChild(option);
+          });
+        } catch (e) {
+          console.error("Error fetching cities", e);
+        }
+      }, 300); // 300ms delay
+    }
+  </script>
+
+</body>
+
+</html>
