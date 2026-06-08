@@ -23,7 +23,11 @@ load_dotenv(dotenv_path=os.path.join(_BASE_DIR, ".env"), override=True)
 # ──────────────────────────────────────────────
 # Flask app initialisation
 # ──────────────────────────────────────────────
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    template_folder=os.path.join(_BASE_DIR, "templates"),
+    static_folder=os.path.join(_BASE_DIR, "static"),
+)
 
 # Secret key is required for Flask sessions (stores last searched city).
 # Loaded from .env — set FLASK_SECRET_KEY to a strong random string in production.
