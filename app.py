@@ -27,6 +27,7 @@ app = Flask(
     __name__,
     template_folder=os.path.join(_BASE_DIR, "templates"),
     static_folder=os.path.join(_BASE_DIR, "static"),
+    static_url_path="/static",
 )
 
 # Secret key is required for Flask sessions (stores last searched city).
