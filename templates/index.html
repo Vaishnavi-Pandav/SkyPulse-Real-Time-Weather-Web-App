@@ -40,9 +40,10 @@
 
     <!-- TOP NAVIGATION -->
     <header class="top-nav animate-fade-down">
-      <div class="brand"><img src="{{ url_for('static', filename='logo.png') }}" alt="Logo"
-          style="height: 54px; width: 54px; margin-right: 12px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.7)); border-radius: 50%;">
-        SkyPulse</div>
+      <div class="brand">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+        SkyPulse
+      </div>
       <div class="search-location">
         <form action="/weather" method="POST" id="weather-form">
           <i class="bi bi-geo-alt"></i>
